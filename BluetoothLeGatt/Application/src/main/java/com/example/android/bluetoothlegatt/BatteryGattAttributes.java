@@ -16,26 +16,30 @@
 
 package com.example.android.bluetoothlegatt;
 
+import android.os.ParcelUuid;
+
 import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * This class includes a small subset of standard GATT attributes for demonstration purposes.
  */
-public class SampleGattAttributes {
-    private static HashMap<String, String> attributes = new HashMap();
-    public static String HEART_RATE_MEASUREMENT = "00002a37-0000-1000-8000-00805f9b34fb";
-    public static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+public class BatteryGattAttributes {
+    private static HashMap<UUID, String> attributes = new HashMap();
+    public static UUID BLE_CHAR_VOLTAGE = UUID.fromString("00002ae1-0000-1000-8000-00805f9b34fb");
+    public static UUID BLE_CHAR_CURRENT = UUID.fromString("00002ae0-0000-1000-8000-00805f9b34fb");
+    public static UUID BLE_SERVICE_BATTERY = UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb");
 
     static {
         // Sample Services.
-        attributes.put("0000180d-0000-1000-8000-00805f9b34fb", "Heart Rate Service");
-        attributes.put("0000180a-0000-1000-8000-00805f9b34fb", "Device Information Service");
-        // Sample Characteristics.
-        attributes.put(HEART_RATE_MEASUREMENT, "Heart Rate Measurement");
-        attributes.put("00002a29-0000-1000-8000-00805f9b34fb", "Manufacturer Name String");
+        attributes.put(BLE_SERVICE_BATTERY, "Battery Service");
+        attributes.put(BLE_CHAR_VOLTAGE, "Voltage");
+        attributes.put(BLE_CHAR_CURRENT, "Current");
+        attributes.put(UUID.fromString("0000180a-0000-1000-8000-00805f9b34fb"), "Device Information Service");
+        attributes.put(UUID.fromString("00002a29-0000-1000-8000-00805f9b34fb"), "Manufacturer Name String");
     }
 
-    public static String lookup(String uuid, String defaultName) {
+    public static String lookup(UUID uuid, String defaultName) {
         String name = attributes.get(uuid);
         return name == null ? defaultName : name;
     }

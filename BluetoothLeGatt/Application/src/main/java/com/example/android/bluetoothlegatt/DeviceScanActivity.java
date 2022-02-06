@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelUuid;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -46,6 +47,7 @@ public class DeviceScanActivity extends ListActivity {
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;
     private Handler mHandler;
+    private ListActivity mSelfReference;
 
     private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
@@ -53,6 +55,7 @@ public class DeviceScanActivity extends ListActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        mSelfReference = this;
         super.onCreate(savedInstanceState);
         getActionBar().setTitle(R.string.title_devices);
         mHandler = new Handler();
@@ -249,6 +252,22 @@ public class DeviceScanActivity extends ListActivity {
 
         @Override
         public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+
+            if(device.getUuids() != null ) {
+                for (ParcelUuid uuid : device.getUuids()) {
+                    if (BatteryGattAttributes.BLE_SERVICE_BATTERY.equals(uuid.getUuid())) {
+                        final Intent intent = new Intent(mSelfReference, DeviceControlActivity.class);
+                        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device.getName());
+                        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+                        if (mScanning) {
+                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                            mScanning = false;
+                        }
+                        startActivity(intent);
+                        return;
+                    }
+                }
+            }
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
