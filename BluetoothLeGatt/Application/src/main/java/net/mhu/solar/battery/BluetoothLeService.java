@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.android.bluetoothlegatt;
+package net.mhu.solar.battery;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -22,7 +22,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -32,8 +31,9 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Service for managing connection and data communication with a GATT server hosted on a
@@ -89,6 +89,7 @@ public class BluetoothLeService extends Service {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "onServicesDiscovered comleted successfully.");
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
@@ -100,7 +101,11 @@ public class BluetoothLeService extends Service {
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "onCharacteristicRead comleted successfully.");
                 broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+
+            } else {
+                Log.w(TAG, "onCharacteristicRead received: " + status);
             }
         }
 
@@ -119,9 +124,21 @@ public class BluetoothLeService extends Service {
     private void broadcastUpdate(final String action,
                                  final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
-        final int value = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 0);
-        intent.putExtra(EXTRA_DATA, value);
         intent.putExtra("uuid", characteristic.getUuid());
+
+        if( characteristic.getUuid().equals(BatteryGattAttributes.BLE_CHAR_BATTERY)) {
+            final BatteryGattAttributes.BatteryDataPoint value = new BatteryGattAttributes.BatteryDataPoint();
+            Log.w(TAG, "Characteristic value: "+ Arrays.toString(characteristic.getValue()));
+            value.setInVoltage(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 0) / 100f);
+            value.setInCurrent(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 2) / 100f);
+            value.setOutVoltage(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 4) / 100f);
+            value.setOutCurrent(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 6) / 100f);
+            value.setWattHIn(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 8) / 10f);
+            value.setWattHOut(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 10) / 10f);
+            value.setBatteryLevel(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 12) / 10f);
+            value.setRuntime(Duration.ofMinutes(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 14)));
+            intent.putExtra(EXTRA_DATA, value);
+        }
         sendBroadcast(intent);
     }
 
